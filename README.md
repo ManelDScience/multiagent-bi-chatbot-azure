@@ -93,4 +93,4 @@ El sistema está diseñado para ejecutar únicamente consultas SQL de lectura. L
 
 Manel  
 
-Data & AI / BI Specialist
+Data & AI / BI lead

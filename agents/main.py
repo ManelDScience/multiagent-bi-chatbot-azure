@@ -3,6 +3,7 @@ from src.sql_agent import run_sql_agent
 from src.schema_selector import select_schema_context
 from src.mcp_client import execute_sql
 from src.sql_parser import extract_sql_from_markdown
+from src.analyst_agent import run_analyst_agent
 
 def main():
     print("Multi-Agent BI Assistant")
@@ -37,6 +38,14 @@ def main():
 
     print("\n[Resultado MCP]")
     print(query_result)
+
+    analyst_output = run_analyst_agent(
+    user_question=user_question,
+    query_result=query_result,
+    )
+
+    print("\n[Analyst Agent]")
+    print(analyst_output)
 
 
 if __name__ == "__main__":

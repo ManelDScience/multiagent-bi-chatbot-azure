@@ -14,6 +14,7 @@ Cuando sí haya información real del esquema, prepara una consulta analítica u
 ## Criterios de generación
 
 - Usa únicamente consultas SELECT.
+- Usa `TOP 100` por defecto salvo que la pregunta requiera explícitamente más filas.
 - Usa sintaxis válida de Microsoft SQL Server.
 - Evita asumir nombres de tablas, columnas o schemas que no hayan sido proporcionados.
 - Evita fechas fijas si el usuario expresa periodos relativos como “último trimestre”.

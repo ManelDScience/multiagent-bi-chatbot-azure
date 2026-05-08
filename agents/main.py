@@ -1,6 +1,8 @@
 from src.planner_agent import run_planner
-from src.sql_agent import run_sql_agent 
-
+from src.sql_agent import run_sql_agent
+from src.schema_selector import select_schema_context
+from src.mcp_client import execute_sql
+from src.sql_parser import extract_sql_from_markdown
 
 def main():
     print("Multi-Agent BI Assistant")
@@ -13,10 +15,28 @@ def main():
     print("\n[Planner Agent]")
     print(planner_output)
 
-    sql_output = run_sql_agent(user_question, planner_output)
+    schema_context = select_schema_context(user_question)
+
+    print("\n[Schema Selector]")
+    print(schema_context)
+
+    sql_output = run_sql_agent(
+        user_question=user_question,
+        planner_output=planner_output,
+        schema_available=True,
+        schema_context=schema_context,
+    )
 
     print("\n[SQL Agent]")
-    print(sql_output)
+    sql_query = extract_sql_from_markdown(sql_output)
+
+    print("\n[SQL Ejecutada]")
+    print(sql_query)
+
+    query_result = execute_sql(sql_query)
+
+    print("\n[Resultado MCP]")
+    print(query_result)
 
 
 if __name__ == "__main__":

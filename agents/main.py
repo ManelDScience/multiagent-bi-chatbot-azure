@@ -1,4 +1,5 @@
 from src.planner_agent import run_planner
+from src.sql_agent import run_sql_agent 
 
 
 def main():
@@ -11,6 +12,11 @@ def main():
 
     print("\n[Planner Agent]")
     print(planner_output)
+
+    sql_output = run_sql_agent(user_question, planner_output)
+
+    print("\n[SQL Agent]")
+    print(sql_output)
 
 
 if __name__ == "__main__":

@@ -54,8 +54,28 @@ def main():
     analyst_output=analyst_output,
     )
 
-    print("\n[Critic Agent]")
-    print(critic_output)
+
+    if "REQUIERE REVISIÓN" in critic_output.upper():
+        print("\n[Revisión automática]")
+        print("El Critic Agent ha pedido revisión. Reformulando respuesta...")
+
+        analyst_output = run_analyst_agent(
+            user_question=user_question,
+            query_result=query_result,
+            critic_feedback=critic_output,
+        )
+
+        print("\n[Analyst Agent - Revisado]")
+        print(analyst_output)
+
+        critic_output = run_critic_agent(
+            user_question=user_question,
+            query_result=query_result,
+            analyst_output=analyst_output,
+        )
+
+        print("\n[Critic Agent - Revisión final]")
+        print(critic_output)
 
 
 if __name__ == "__main__":

@@ -16,6 +16,7 @@ def load_prompt() -> str:
 def run_analyst_agent(
     user_question: str,
     query_result: str,
+    critic_feedback: str = "",
 ) -> str:
     client = OpenAI(
         base_url=FOUNDRY_OPENAI_ENDPOINT,
@@ -31,7 +32,12 @@ Pregunta original:
 Resultado de la consulta:
 {query_result}
 
-Redacta una respuesta de negocio clara para el usuario.
+Feedback del Critic Agent:
+{critic_feedback if critic_feedback else "No hay feedback previo."}
+
+Redacta una respuesta clara para el usuario.
+No añadas causas, hipótesis ni recomendaciones no solicitadas.
+Si hay feedback del Critic Agent, corrige la respuesta según ese feedback.
 """
 
     response = client.chat.completions.create(

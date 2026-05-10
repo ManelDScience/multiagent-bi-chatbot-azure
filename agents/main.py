@@ -5,6 +5,7 @@ from src.mcp_client import execute_sql
 from src.sql_parser import extract_sql_from_markdown
 from src.analyst_agent import run_analyst_agent
 from src.critic_agent import run_critic_agent
+from src.critic_parser import critic_requires_revision, get_normalized_critic_decision
 
 def main():
     print("Multi-Agent BI Assistant")
@@ -54,8 +55,13 @@ def main():
     analyst_output=analyst_output,
     )
 
+    print("\n[Critic Agent]")
+    print(critic_output)
 
-    if "REQUIERE REVISIÓN" in critic_output.upper():
+    print("\n[Critic Decision]")
+    print(get_normalized_critic_decision(critic_output))
+
+    if critic_requires_revision(critic_output):
         print("\n[Revisión automática]")
         print("El Critic Agent ha pedido revisión. Reformulando respuesta...")
 

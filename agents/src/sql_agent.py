@@ -18,6 +18,7 @@ def run_sql_agent(
     planner_output: str,
     schema_available: bool = False,
     schema_context: str = "",
+    semantic_context: str = "",
 ) -> str:
     client = OpenAI(
         base_url=FOUNDRY_OPENAI_ENDPOINT,
@@ -36,6 +37,9 @@ Información de esquema:
 
 Pregunta original:
 {user_question}
+
+Contexto semántico:
+{semantic_context if semantic_context else "No se ha proporcionado contexto semántico."}
 
 Plan recibido:
 {planner_output}

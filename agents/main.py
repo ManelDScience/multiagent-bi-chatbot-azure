@@ -5,14 +5,21 @@ from src.mcp_client import execute_sql
 from src.sql_parser import extract_sql_from_markdown
 from src.analyst_agent import run_analyst_agent
 from src.critic_agent import run_critic_agent
+from src.critic_parser import critic_requires_revision, get_normalized_critic_decision
+from src.data_quality_agent import run_data_quality_agent
+from src.semantic_loader import load_semantic_context
 
 def main():
     print("Multi-Agent BI Assistant")
     print("------------------------")
 
     user_question = input("\nPregunta de negocio: ")
+    semantic_context = load_semantic_context()
 
-    planner_output = run_planner(user_question)
+    planner_output = run_planner(
+        user_question = user_question,
+        semantic_context = semantic_context,
+        )
 
     print("\n[Planner Agent]")
     print(planner_output)
@@ -40,6 +47,14 @@ def main():
     print("\n[Resultado MCP]")
     print(query_result)
 
+    data_quality_output = run_data_quality_agent(
+    user_question=user_question,
+    query_result=query_result,
+    )
+
+    print("\n[Data Quality Agent]")
+    print(data_quality_output)
+
     analyst_output = run_analyst_agent(
     user_question=user_question,
     query_result=query_result,
@@ -54,8 +69,13 @@ def main():
     analyst_output=analyst_output,
     )
 
+    print("\n[Critic Agent]")
+    print(critic_output)
 
-    if "REQUIERE REVISIÓN" in critic_output.upper():
+    print("\n[Critic Decision]")
+    print(get_normalized_critic_decision(critic_output))
+
+    if critic_requires_revision(critic_output):
         print("\n[Revisión automática]")
         print("El Critic Agent ha pedido revisión. Reformulando respuesta...")
 

@@ -14,6 +14,8 @@ Cuando sí haya información real del esquema, prepara una consulta analítica u
 ## Criterios de generación
 
 - Usa únicamente consultas SELECT.
+- Si el usuario pregunta por “los clientes con más ventas”, “top clientes”, “mayores ventas”, "con más" o similar, usa `TOP 10` por defecto salvo que el usuario indique otro número.
+- Para rankings, ordena la métrica principal de forma descendente.
 - Usa `TOP 100` por defecto salvo que la pregunta requiera explícitamente más filas.
 - Usa sintaxis válida de Microsoft SQL Server.
 - Evita asumir nombres de tablas, columnas o schemas que no hayan sido proporcionados.

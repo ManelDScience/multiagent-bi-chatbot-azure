@@ -9,11 +9,14 @@ from config import (
 
 
 def load_prompt() -> str:
-    prompt_path = Path(__file__).resolve().parents[1] / "prompts" / "planner.md"
+    prompt_path = Path(__file__).resolve().parents[1] / "prompts" / "data_quality.md"
     return prompt_path.read_text(encoding="utf-8")
 
 
-def run_planner(user_question: str, semantic_context: str = "") -> str:
+def run_data_quality_agent(
+    user_question: str,
+    query_result: str,
+) -> str:
     client = OpenAI(
         base_url=FOUNDRY_OPENAI_ENDPOINT,
         api_key=FOUNDRY_OPENAI_KEY,
@@ -22,13 +25,13 @@ def run_planner(user_question: str, semantic_context: str = "") -> str:
     system_prompt = load_prompt()
 
     user_message = f"""
-Pregunta del usuario:
+Pregunta original:
 {user_question}
 
-Contexto semántico disponible:
-{semantic_context if semantic_context else "No se ha proporcionado contexto semántico."}
+Resultado SQL:
+{query_result}
 
-Genera el plan de análisis.
+Revisa la calidad básica del resultado antes de que lo use el Analyst Agent.
 """
 
     response = client.chat.completions.create(
@@ -37,7 +40,7 @@ Genera el plan de análisis.
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message},
         ],
-        temperature=0.2,
+        temperature=0,
     )
 
     return response.choices[0].message.content

@@ -7,14 +7,19 @@ from src.analyst_agent import run_analyst_agent
 from src.critic_agent import run_critic_agent
 from src.critic_parser import critic_requires_revision, get_normalized_critic_decision
 from src.data_quality_agent import run_data_quality_agent
+from src.semantic_loader import load_semantic_context
 
 def main():
     print("Multi-Agent BI Assistant")
     print("------------------------")
 
     user_question = input("\nPregunta de negocio: ")
+    semantic_context = load_semantic_context()
 
-    planner_output = run_planner(user_question)
+    planner_output = run_planner(
+        user_question = user_question,
+        semantic_context = semantic_context,
+        )
 
     print("\n[Planner Agent]")
     print(planner_output)

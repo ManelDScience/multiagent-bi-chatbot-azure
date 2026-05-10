@@ -38,6 +38,10 @@ def score_candidate(user_question: str, schema: str, table: str) -> int:
     if "año" in q or "year" in q:
         if "year" in table_lower:
             score += 20
+        if "month" in table_lower or "monthyear" in table_lower:
+            score -= 10
+        if table_lower.endswith("peryear"):
+            score += 10
 
     if "mes" in q or "month" in q:
         if "month" in table_lower or "monthyear" in table_lower:

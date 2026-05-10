@@ -58,7 +58,7 @@ def score_candidate(user_question: str, schema: str, table: str) -> int:
     return score
 
 
-def select_best_candidate(user_question: str, views: list[dict]) -> dict:
+def select_best_candidate(user_question: str, views: list[dict]) -> tuple[dict, list[dict]]:
     candidates = []
 
     for view in views:
@@ -82,16 +82,27 @@ def select_best_candidate(user_question: str, views: list[dict]) -> dict:
     if not candidates:
         raise ValueError("No se encontraron vistas/tablas candidatas.")
 
-    return sorted(candidates, key=lambda x: x["score"], reverse=True)[0]
+    candidates = sorted(candidates, key=lambda x: x["score"], reverse=True)
+
+    return candidates[0], candidates
 
 
 def select_schema_context(user_question: str) -> str:
     views_raw = list_views()
     views = json.loads(views_raw)
 
-    best = select_best_candidate(user_question, views)
+    best, candidates = select_best_candidate(user_question, views)
 
     columns_context = get_columns(best["schema"], best["table"])
+
+    top_candidates = candidates[:5]
+
+    candidates_text = "\n".join(
+        [
+            f"- {c['schema']}.{c['table']} → score {c['score']}"
+            for c in top_candidates
+        ]
+    )
 
     return f"""
 TABLA/VISTA SELECCIONADA:
@@ -99,6 +110,9 @@ TABLA/VISTA SELECCIONADA:
 
 SCORE DE SELECCIÓN:
 {best["score"]}
+
+CANDIDATAS EVALUADAS:
+{candidates_text}
 
 COLUMNAS DISPONIBLES:
 {columns_context}

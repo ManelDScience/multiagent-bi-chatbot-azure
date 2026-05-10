@@ -6,6 +6,7 @@ from src.sql_parser import extract_sql_from_markdown
 from src.analyst_agent import run_analyst_agent
 from src.critic_agent import run_critic_agent
 from src.critic_parser import critic_requires_revision, get_normalized_critic_decision
+from src.data_quality_agent import run_data_quality_agent
 
 def main():
     print("Multi-Agent BI Assistant")
@@ -40,6 +41,14 @@ def main():
 
     print("\n[Resultado MCP]")
     print(query_result)
+
+    data_quality_output = run_data_quality_agent(
+    user_question=user_question,
+    query_result=query_result,
+    )
+
+    print("\n[Data Quality Agent]")
+    print(data_quality_output)
 
     analyst_output = run_analyst_agent(
     user_question=user_question,

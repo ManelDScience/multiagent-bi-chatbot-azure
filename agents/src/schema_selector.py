@@ -46,6 +46,8 @@ def score_candidate(user_question: str, schema: str, table: str) -> int:
     if "mes" in q or "month" in q:
         if "month" in table_lower or "monthyear" in table_lower:
             score += 20
+        if table_lower == "totalsalespermonthyear":
+            score += 10
 
     if "cliente" in q or "customer" in q:
         if "customer" in table_lower:
@@ -58,6 +60,9 @@ def score_candidate(user_question: str, schema: str, table: str) -> int:
     if "ventas" in q or "sales" in q:
         if "sales" in table_lower:
             score += 15
+    if "buyinggroup" in table_lower or "buying" in table_lower:
+        if "grupo" not in q and "buying" not in q:
+            score -= 15
 
     return score
 

@@ -37,6 +37,13 @@ Debes elegir una única validación:
 - Considera equivalentes `381585.35`, `381,585.35` y `381.585,35`.
 - Añadir símbolo de moneda es aceptable si no cambia el valor.
 - La validación y la recomendación deben ser coherentes entre sí.
+- No marques REQUIERE REVISIÓN por supuestas omisiones en listas largas si no puedes identificar exactamente qué fila del resultado SQL falta.
+- Si la respuesta contiene todos los años o categorías principales visibles y no hay cifras claramente incorrectas, marca APROBADA.
+- Para listas largas, prioriza validar estructura general, no comparar fila por fila.
+Si el Critic final sigue en REQUIERE REVISIÓN después de 1 reintento:
+→ mostrar “Revisión no concluyente”
+→ conservar la respuesta revisada del Analyst
+→ no hacer más loops
 
 ## Formato obligatorio
 

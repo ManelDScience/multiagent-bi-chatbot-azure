@@ -43,3 +43,10 @@ APROBADA
 
     assert critic_requires_revision(text) is False
     assert get_normalized_critic_decision(text) == "APROBADA"
+
+
+def test_critic_requires_revision_when_inconclusive():
+    text = "Revisión no concluyente"
+
+    assert critic_requires_revision(text) is True
+    assert get_normalized_critic_decision(text) == "REQUIERE REVISIÓN"

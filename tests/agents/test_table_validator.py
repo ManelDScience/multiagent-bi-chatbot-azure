@@ -42,3 +42,20 @@ def test_table_validator_handles_empty_result():
     result = validate_table_coverage(query_result, analyst_output)
 
     assert "REVISAR" in result
+
+    def test_table_validator_accepts_translated_month_names():
+      query_result = """
+  [
+    {
+      "Year": 2013,
+      "MonthName": "January",
+      "TotalSales": 3770410.85
+    }
+  ]
+  """
+
+      analyst_output = "Enero 2013: 3.770.410,85 €"
+
+      result = validate_table_coverage(query_result, analyst_output)
+
+      assert "OK" in result

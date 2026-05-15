@@ -35,6 +35,8 @@ Data Quality Agent
   ↓
 Analyst Agent
   ↓
+Table Validator
+  ↓
 Critic Agent
   ↓
 Critic Decision
@@ -252,6 +254,26 @@ Responsibilities:
 - Use Spanish business language.
 - For rankings, present the Top N clearly.
 - For period-based outputs, present the values by period.
+
+---
+
+### Table Validator
+
+Performs deterministic validation over structured SQL results.
+
+Responsibilities:
+
+- Parse SQL results as JSON.
+- Compare query result values with the Analyst Agent response.
+- Normalize numeric formats.
+- Accept equivalent formats such as:
+  - `381585.35`
+  - `381,585.35`
+  - `381.585,35`
+- Detect possible missing values in tabular answers.
+- Provide a deterministic validation signal to the Critic Agent.
+
+This reduces the risk of the Critic Agent incorrectly flagging valid answers due to formatting differences or long lists.
 
 ---
 
@@ -558,7 +580,8 @@ Critic Decision → APROBADA
 │       ├── sql_parser.py
 │       ├── schema_selector.py
 │       ├── semantic_loader.py
-│       └── critic_parser.py
+│       ├── critic_parser.py
+│       └── table_validator.py       
 │
 ├── mcp-server/
 │   ├── server.js
@@ -712,10 +735,10 @@ Current mitigation:
 Critic Decision is normalized by code.
 ```
 
-Future improvement:
+Actual improvement:
 
 ```text
-Use deterministic validators for tabular outputs.
+- Tabular validation is now partially deterministic, but still basic.
 ```
 
 ---
@@ -778,8 +801,8 @@ Add tests for:
 ### Next steps
 
 ```text
-1. Improve documentation and README.
-2. Add deterministic validation for tabular outputs.
+1. Keep improving documentation and README.
+2. Upgrade deterministic validation for tabular outputs.
 3. Improve semantic context selection.
 4. Add tests.
 5. Improve schema selector.

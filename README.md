@@ -121,6 +121,10 @@ The assistant can currently:
 └─────────┬──────────┘
           ↓
 ┌────────────────────┐
+│ Tabular Validator  │
+└─────────┬──────────┘
+          ↓
+┌────────────────────┐
 │ Critic Agent       │
 └─────────┬──────────┘
           ↓
@@ -245,6 +249,14 @@ It focuses on:
 - Avoiding unsupported causes.
 - Formatting figures clearly.
 - Producing business-friendly Spanish responses.
+
+---
+
+### Table Validator
+
+Performs deterministic checks over structured SQL results before the Critic Agent reviews the final answer.
+
+It helps validate that key values from the SQL result are present in the Analyst response, while normalizing numeric formats such as European and SQL decimal notation.
 
 ---
 

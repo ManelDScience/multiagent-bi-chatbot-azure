@@ -1,13 +1,13 @@
 from src.planner_agent import run_planner
 from src.sql_agent import run_sql_agent
-from src.schema_selector import select_schema_context
+from context_selectors.schema_selector import select_schema_context
 from clients.mcp_client import execute_sql
 from utils.sql_parser import extract_sql_from_markdown
 from src.analyst_agent import run_analyst_agent
 from src.critic_agent import run_critic_agent
 from src.data_quality_agent import run_data_quality_agent
-from src.semantic_loader import load_semantic_context
-from src.semantic_selector import select_semantic_context
+from context_selectors.semantic_loader import load_semantic_context
+from context_selectors.semantic_selector import select_semantic_context
 from validators.table_validator import validate_table_coverage
 from validators.critic_parser import (
     critic_requires_revision,

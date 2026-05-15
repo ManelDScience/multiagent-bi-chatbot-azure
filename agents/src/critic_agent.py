@@ -17,6 +17,7 @@ def run_critic_agent(
     user_question: str,
     query_result: str,
     analyst_output: str,
+    table_validation_output: str = "",
 ) -> str:
     client = OpenAI(
         base_url=FOUNDRY_OPENAI_ENDPOINT,
@@ -34,6 +35,9 @@ Resultado SQL:
 
 Respuesta del Analyst Agent:
 {analyst_output}
+
+Validación tabular por código:
+{table_validation_output if table_validation_output else "No se ha proporcionado validación tabular."}
 
 Revisa si la respuesta es válida según tus criterios.
 """

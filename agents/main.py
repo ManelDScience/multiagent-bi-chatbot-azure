@@ -8,6 +8,7 @@ from src.critic_agent import run_critic_agent
 from src.critic_parser import critic_requires_revision, get_normalized_critic_decision
 from src.data_quality_agent import run_data_quality_agent
 from src.semantic_loader import load_semantic_context
+from src.table_validator import validate_table_coverage
 
 def main():
     print("Multi-Agent BI Assistant")
@@ -67,7 +68,16 @@ def main():
     user_question=user_question,
     query_result=query_result,
     analyst_output=analyst_output,
+    table_validation_output=table_validation_output,
     )
+
+    table_validation_output = validate_table_coverage(
+    query_result=query_result,
+    analyst_output=analyst_output,
+)
+
+    print("\n[Table Validator]")
+    print(table_validation_output)
 
     print("\n[Critic Agent]")
     print(critic_output)
@@ -92,6 +102,7 @@ def main():
             user_question=user_question,
             query_result=query_result,
             analyst_output=analyst_output,
+            table_validation_output=table_validation_output,
         )
 
         print("\n[Critic Agent - Revisión final]")

@@ -2,7 +2,7 @@ from src.planner_agent import run_planner
 from src.sql_agent import run_sql_agent
 from src.schema_selector import select_schema_context
 from src.mcp_client import execute_sql
-from src.sql_parser import extract_sql_from_markdown
+from utils.sql_parser import extract_sql_from_markdown
 from src.analyst_agent import run_analyst_agent
 from src.critic_agent import run_critic_agent
 from src.data_quality_agent import run_data_quality_agent

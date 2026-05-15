@@ -1,4 +1,4 @@
-from agents.src.table_validator import validate_table_coverage
+from agents.validators.table_validator import validate_table_coverage
 
 
 def test_table_validator_accepts_european_number_format():

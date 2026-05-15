@@ -5,11 +5,14 @@ from src.mcp_client import execute_sql
 from src.sql_parser import extract_sql_from_markdown
 from src.analyst_agent import run_analyst_agent
 from src.critic_agent import run_critic_agent
-from src.critic_parser import critic_requires_revision, get_normalized_critic_decision
 from src.data_quality_agent import run_data_quality_agent
 from src.semantic_loader import load_semantic_context
-from src.table_validator import validate_table_coverage
 from src.semantic_selector import select_semantic_context
+from validators.table_validator import validate_table_coverage
+from validators.critic_parser import (
+    critic_requires_revision,
+    get_normalized_critic_decision,
+)
 
 def main():
     print("Multi-Agent BI Assistant")

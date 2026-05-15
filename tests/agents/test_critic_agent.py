@@ -1,4 +1,4 @@
-from agents.src.critic_parser import critic_requires_revision, get_normalized_critic_decision
+from agents.validators.critic_parser import critic_requires_revision, get_normalized_critic_decision
 
 def test_critic_approved_when_recommendation_approved():
 

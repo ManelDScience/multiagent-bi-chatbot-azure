@@ -6,6 +6,8 @@ This MVP demonstrates a **multi-agent Business Intelligence assistant** capable 
 
 The system receives a business question, loads semantic business context, selects only the most relevant semantic definitions, plans the analysis, selects the most relevant data context, generates SQL, executes the query safely through an MCP Server, validates the result, produces a business-readable answer, validates table coverage deterministically and reviews the answer before delivery.
 
+The current implementation has been refactored into a modular Python structure. `main.py` now acts as a lightweight CLI entry point, while `workflows/bi_workflow.py` contains the complete BI orchestration flow.
+
 The current goal is not to build a final product yet, but to validate the core architecture of an agentic BI workflow.
 
 ---
@@ -13,6 +15,12 @@ The current goal is not to build a final product yet, but to validate the core a
 ## 2. Current Architecture
 
 ```text
+CLI entry point
+main.py
+  ↓
+BI Workflow Orchestrator
+workflows/bi_workflow.py
+  ↓
 User question
   ↓
 Semantic Layer Loader
@@ -43,12 +51,62 @@ Critic Agent
   ↓
 Critic Decision
   ↓
+Automatic revision if required
+  ↓
 Final validated answer
+```
+
+The project is now organized by responsibility:
+
+```text
+agent_modules/      → LLM-based agents
+clients/            → external clients, such as MCP client
+context_selectors/  → semantic and schema selection
+utils/              → small utility modules
+validators/         → deterministic validation and critic parsing
+workflows/          → workflow orchestration
 ```
 
 ---
 
 ## 3. Main Components
+
+### BI Workflow Orchestrator
+
+Located in:
+
+```text
+agents/workflows/bi_workflow.py
+```
+
+The workflow orchestrator coordinates the complete BI agent pipeline.
+
+Responsibilities:
+
+- Load the semantic layer.
+- Select the relevant semantic context.
+- Run the Planner Agent.
+- Select the relevant SQL schema context.
+- Run the SQL Agent.
+- Extract and execute SQL through MCP.
+- Run Data Quality validation.
+- Generate the Analyst response.
+- Run deterministic Table Validator checks.
+- Run Critic Agent validation.
+- Trigger automatic revision when required.
+- Normalize the final Critic decision.
+
+This refactor keeps `main.py` small and prepares the project for a future migration to Microsoft Agent Framework.
+
+Current `main.py` responsibility:
+
+```text
+1. Print CLI header.
+2. Read the user business question.
+3. Call run_bi_workflow(user_question).
+```
+
+---
 
 ### Planner Agent
 
@@ -716,25 +774,37 @@ The tests cover:
 │   ├── main.py
 │   ├── config.py
 │   ├── requirements.txt
+│   ├── agent_modules/
+│   │   ├── __init__.py
+│   │   ├── planner_agent.py
+│   │   ├── sql_agent.py
+│   │   ├── analyst_agent.py
+│   │   ├── critic_agent.py
+│   │   └── data_quality_agent.py
+│   ├── clients/
+│   │   ├── __init__.py
+│   │   └── mcp_client.py
+│   ├── context_selectors/
+│   │   ├── __init__.py
+│   │   ├── schema_selector.py
+│   │   ├── semantic_loader.py
+│   │   └── semantic_selector.py
 │   ├── prompts/
 │   │   ├── planner.md
 │   │   ├── sql_agent.md
 │   │   ├── analyst.md
 │   │   ├── critic.md
 │   │   └── data_quality.md
-│   └── src/
-│       ├── planner_agent.py
-│       ├── sql_agent.py
-│       ├── analyst_agent.py
-│       ├── critic_agent.py
-│       ├── data_quality_agent.py
-│       ├── mcp_client.py
-│       ├── sql_parser.py
-│       ├── schema_selector.py
-│       ├── semantic_loader.py
-│       ├── semantic_selector.py
-│       ├── table_validator.py
-│       └── critic_parser.py
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   └── sql_parser.py
+│   ├── validators/
+│   │   ├── __init__.py
+│   │   ├── table_validator.py
+│   │   └── critic_parser.py
+│   └── workflows/
+│       ├── __init__.py
+│       └── bi_workflow.py
 │
 ├── mcp-server/
 │   ├── server.js
@@ -768,30 +838,80 @@ The tests cover:
 └── LICENSE
 ```
 
+Important naming decision:
+
+```text
+The selector package is named context_selectors/ instead of selectors/.
+```
+
+Reason:
+
+```text
+selectors is the name of a Python standard-library module. Using selectors/ as a local package shadows the standard module and can break dependencies such as subprocess, asyncio, pydantic and openai.
+```
+
 ---
 
 ## 7. Technical Decisions
 
 ### Manual orchestration before Microsoft Agent Framework
 
-The current workflow is manually orchestrated in Python.
+The workflow is still manually orchestrated in Python, but it has now been extracted from `main.py` into:
+
+```text
+agents/workflows/bi_workflow.py
+```
+
+Current design:
+
+```text
+main.py → CLI entry point
+bi_workflow.py → complete BI orchestration
+```
 
 Reason:
 
 - Easier to understand.
 - Easier to debug.
 - Better for learning.
-- Avoids mixing framework complexity with business logic design.
+- Keeps the orchestration explicit.
+- Avoids mixing framework migration with still-evolving BI logic.
+- Makes the future migration to Microsoft Agent Framework cleaner.
 
 Future plan:
 
 ```text
-Manual orchestration
+Manual orchestration in bi_workflow.py
   ↓
-Microsoft Agent Framework
+Microsoft Agent Framework workflow
   ↓
 Cloud-ready orchestration
 ```
+
+---
+
+### Modular refactor before framework migration
+
+The project has been reorganized by responsibility before migrating to Microsoft Agent Framework.
+
+Current modules:
+
+```text
+agent_modules/      → LLM agent wrappers
+clients/            → MCP and external clients
+context_selectors/  → schema and semantic context selection
+utils/              → low-level helpers
+validators/         → deterministic validation and critic parsing
+workflows/          → orchestration flow
+```
+
+Purpose:
+
+- Reduce `main.py` complexity.
+- Improve readability.
+- Make imports and responsibilities clearer.
+- Prepare the codebase for Microsoft Agent Framework.
+- Reduce the risk of a large migration breaking current functionality.
 
 ---
 
@@ -858,6 +978,25 @@ This reduces the risk of LLM-based validation errors on long lists, translated v
 ---
 
 ## 8. Current Limitations
+
+### Modular refactor is complete but imports remain local-execution oriented
+
+The project is now modularized, but imports are still optimized for running from the `agents` folder during local development.
+
+Current behavior:
+
+```bash
+cd agents
+python main.py
+```
+
+Future improvement:
+
+```text
+Package the Python agent project more formally so it can be executed cleanly from the repository root and later deployed as a service.
+```
+
+---
 
 ### Schema Selector is still simple
 
@@ -986,11 +1125,12 @@ Add tests for:
 ### Immediate next steps
 
 ```text
-1. Improve Semantic Context Selector robustness.
-2. Add more deterministic validators for tabular outputs.
-3. Add more regression tests.
-4. Improve schema selector scoring.
-5. Add architecture diagram.
+1. Update README.md with the latest modular architecture.
+2. Add architecture diagram.
+3. Improve Semantic Context Selector robustness.
+4. Add lightweight integration tests for the full BI workflow.
+5. Add more deterministic validators for tabular outputs.
+6. Improve schema selector scoring.
 ```
 
 ### Short term
@@ -1113,6 +1253,8 @@ Critic validation
 Automatic revision
 Normalized final decision
 Basic automated testing
+Modular project structure
+Separated BI workflow orchestration
 ```
 
 Validated questions:
@@ -1132,5 +1274,5 @@ Current test status:
 Current recommended next milestone:
 
 ```text
-Improve Semantic Context Selector robustness and add an architecture diagram for portfolio presentation.
+Update README.md with the latest modular architecture, then improve Semantic Context Selector robustness and add an architecture diagram for portfolio presentation.
 ```

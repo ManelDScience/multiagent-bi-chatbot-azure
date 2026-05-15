@@ -17,6 +17,10 @@ The current version includes a working end-to-end flow:
 ```text
 User question
   ↓
+CLI entrypoint (`agents/main.py`)
+  ↓
+BI workflow orchestrator (`agents/workflows/bi_workflow.py`)
+  ↓
 Semantic Layer Loader
   ↓
 Semantic Context Selector
@@ -42,6 +46,8 @@ Analyst Agent
 Table Validator
   ↓
 Critic Agent
+  ↓
+Critic Decision
   ↓
 Final validated answer
 ```
@@ -80,68 +86,119 @@ The assistant can currently:
 
 ## Architecture
 
+The project has been refactored into a modular Python workflow. The CLI entrypoint is intentionally small, while the full BI orchestration lives in a dedicated workflow module.
+
 ```text
-┌────────────────────┐
-│   User Question    │
-└─────────┬──────────┘
-          ↓
-┌────────────────────┐
-│ Semantic Layer     │
-│ Loader             │
-└─────────┬──────────┘
-          ↓
-┌────────────────────┐
-│ Planner Agent      │
-└─────────┬──────────┘
-          ↓
-┌────────────────────┐
-│ Schema Selector    │
-└─────────┬──────────┘
-          ↓
-┌────────────────────┐
-│ SQL Agent          │
-└─────────┬──────────┘
-          ↓
-┌────────────────────┐
-│ SQL Parser         │
-└─────────┬──────────┘
-          ↓
-┌────────────────────┐
-│ MCP Client Python  │
-└─────────┬──────────┘
-          ↓
-┌────────────────────┐
-│ MCP Server JS      │
-└─────────┬──────────┘
-          ↓
-┌────────────────────┐
-│ Azure SQL Database │
-└─────────┬──────────┘
-          ↓
-┌────────────────────┐
-│ Data Quality Agent │
-└─────────┬──────────┘
-          ↓
-┌────────────────────┐
-│ Analyst Agent      │
-└─────────┬──────────┘
-          ↓
-┌────────────────────┐
-│ Tabular Validator  │
-└─────────┬──────────┘
-          ↓
-┌────────────────────┐
-│ Critic Agent       │
-└─────────┬──────────┘
-          ↓
-┌────────────────────┐
-│ Final Answer       │
-└────────────────────┘
+┌──────────────────────────────┐
+│        User Question         │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ agents/main.py               │
+│ CLI entrypoint               │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ workflows/bi_workflow.py     │
+│ Multi-agent orchestration    │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ Semantic Layer Loader        │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ Semantic Context Selector    │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ Planner Agent                │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ Schema Selector              │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ SQL Agent                    │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ SQL Parser                   │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ MCP Client Python            │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ MCP Server JS                │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ Azure SQL Database           │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ Data Quality Agent           │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ Analyst Agent                │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ Table Validator              │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ Critic Agent                 │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ Normalized Critic Decision   │
+└──────────────┬───────────────┘
+               ↓
+┌──────────────────────────────┐
+│ Final Answer / Revision Loop │
+└──────────────────────────────┘
 ```
 
 ---
 
 ## Main Components
+
+### BI Workflow Orchestrator
+
+The orchestration logic has been extracted from `main.py` into:
+
+```text
+agents/workflows/bi_workflow.py
+```
+
+Current responsibility split:
+
+```text
+agents/main.py              → CLI entrypoint
+agents/workflows/bi_workflow.py → full BI multi-agent workflow
+```
+
+The workflow orchestrator coordinates:
+
+- Semantic context loading and selection.
+- Planning.
+- Schema selection.
+- SQL generation and parsing.
+- SQL execution through MCP.
+- Data quality validation.
+- Analyst response generation.
+- Deterministic table validation.
+- Critic review.
+- Automatic revision when needed.
+
+This refactor prepares the project for a future migration to Microsoft Agent Framework by separating the business workflow from the local command-line execution.
+
+---
 
 ### Planner Agent
 
@@ -287,6 +344,28 @@ Performs deterministic checks over structured SQL results before the Critic Agen
 
 It helps validate that key values from the SQL result are present in the Analyst response, while normalizing numeric formats such as European and SQL decimal notation.
 
+Current capabilities:
+
+- Parses SQL results as JSON.
+- Checks that key values returned by SQL are present in the Analyst response.
+- Accepts equivalent numeric formats:
+  - `381585.35`
+  - `381,585.35`
+  - `381.585,35`
+- Supports translated month names between English SQL outputs and Spanish business responses:
+  - `January` ↔ `Enero`
+  - `February` ↔ `Febrero`
+  - `March` ↔ `Marzo`
+- Re-runs after the Analyst Agent produces a revised answer.
+- Provides a deterministic signal that can override noisy Critic Agent feedback for structured table coverage.
+
+This is an important design decision:
+
+```text
+Structured validation → deterministic Python code
+Qualitative validation → Critic Agent
+```
+
 ---
 
 ### Critic Agent
@@ -318,6 +397,8 @@ A normalized critic decision is produced by code to avoid relying only on free-f
 
 ## Repository Structure
 
+The Python agent workflow has been refactored into responsibility-based modules.
+
 ```text
 .
 ├── agents/
@@ -325,7 +406,42 @@ A normalized critic decision is produced by code to avoid relying only on free-f
 │   ├── config.py
 │   ├── requirements.txt
 │   ├── prompts/
-│   └── src/
+│   │   ├── planner.md
+│   │   ├── sql_agent.md
+│   │   ├── analyst.md
+│   │   ├── critic.md
+│   │   └── data_quality.md
+│   │
+│   ├── workflows/
+│   │   ├── __init__.py
+│   │   └── bi_workflow.py
+│   │
+│   ├── agent_modules/
+│   │   ├── __init__.py
+│   │   ├── planner_agent.py
+│   │   ├── sql_agent.py
+│   │   ├── analyst_agent.py
+│   │   ├── critic_agent.py
+│   │   └── data_quality_agent.py
+│   │
+│   ├── clients/
+│   │   ├── __init__.py
+│   │   └── mcp_client.py
+│   │
+│   ├── context_selectors/
+│   │   ├── __init__.py
+│   │   ├── schema_selector.py
+│   │   ├── semantic_loader.py
+│   │   └── semantic_selector.py
+│   │
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   └── sql_parser.py
+│   │
+│   └── validators/
+│       ├── __init__.py
+│       ├── critic_parser.py
+│       └── table_validator.py
 │
 ├── mcp-server/
 │   ├── server.js
@@ -352,11 +468,53 @@ A normalized critic decision is produced by code to avoid relying only on free-f
 │       ├── test_critic_agent.py
 │       ├── test_critic_parser.py
 │       ├── test_schema_selector.py
+│       ├── test_semantic_selector.py
 │       ├── test_sql_parser.py
 │       └── test_table_validator.py
 │
 ├── README.md
 └── LICENSE
+```
+
+Refactor completed:
+
+```text
+src/planner_agent.py        → agent_modules/planner_agent.py
+src/sql_agent.py            → agent_modules/sql_agent.py
+src/analyst_agent.py        → agent_modules/analyst_agent.py
+src/critic_agent.py         → agent_modules/critic_agent.py
+src/data_quality_agent.py   → agent_modules/data_quality_agent.py
+
+src/mcp_client.py           → clients/mcp_client.py
+
+src/schema_selector.py      → context_selectors/schema_selector.py
+src/semantic_loader.py      → context_selectors/semantic_loader.py
+src/semantic_selector.py    → context_selectors/semantic_selector.py
+
+src/sql_parser.py           → utils/sql_parser.py
+
+src/table_validator.py      → validators/table_validator.py
+src/critic_parser.py        → validators/critic_parser.py
+
+main.py orchestration       → workflows/bi_workflow.py
+```
+
+Important lesson from the refactor:
+
+```text
+Do not create a Python package called selectors.
+```
+
+Reason: `selectors` is also a Python standard library module used by `subprocess`. A local package with that name shadows the standard library and can break imports with errors such as:
+
+```text
+AttributeError: module 'selectors' has no attribute 'SelectSelector'
+```
+
+The final package name is therefore:
+
+```text
+context_selectors/
 ```
 
 ---
@@ -424,35 +582,43 @@ ORDER BY total_sales_perCustomer DESC;
 
 ## Current Limitations
 
-- The agent orchestration is still manual in Python.
+- The agent orchestration is still manual in Python, but it is now isolated in `workflows/bi_workflow.py`.
+- `main.py` is only a CLI entrypoint.
 - The Schema Selector uses rule-based scoring.
-- The semantic layer is loaded fully, not selectively.
-- The Critic Agent can still be inconsistent on long tabular outputs, although the final decision is normalized by code.
-- Semantic context selection is now implemented with simple keyword scoring, but not yet with embeddings or RAG.
+- Semantic context selection is implemented with simple keyword scoring, but not yet with embeddings or RAG.
+- The Semantic Context Selector can still mix Markdown sections because it currently splits by headings.
+- The Critic Agent can still be inconsistent on long tabular outputs, although the final decision is normalized by code and supported by deterministic validation.
 - Tabular validation is partially deterministic and supports numeric normalization and month name translations.
 - The current test suite covers core utilities, but end-to-end tests are not implemented yet.
 - Monthly ordering should be improved by adding `MonthNumber` to the view.
+- Microsoft Agent Framework migration is still pending.
 
 ---
 
 ## Roadmap
 
+### Immediate next steps
+
+- Update `docs/architecture.md` and `docs/roadmap.md` to reflect the modular structure.
+- Add a visual architecture diagram for portfolio presentation.
+- Add lightweight integration/smoke tests for the full BI workflow.
+
 ### Short term
 
-- Improve semantic context selection.
+- Improve Semantic Context Selector robustness.
 - Add deterministic validation for more table patterns.
-- Add more tests for agent utilities.
-- Improve schema selector scoring.
-- Add architecture diagram.
+- Add more regression tests.
+- Improve Schema Selector scoring.
 - Add demo scripts.
+- Add portfolio-ready screenshots and terminal outputs.
 
 ### Medium term
 
-- Add semantic context retrieval instead of loading the full semantic layer.
+- Add semantic context retrieval with embeddings or RAG.
 - Add logging and observability.
 - Add a simple UI or API layer.
 - Improve error handling and retries.
-- Add portfolio-ready screenshots and demo outputs.
+- Add richer metadata to the semantic layer.
 
 ### Long term
 
@@ -492,5 +658,4 @@ using real enterprise-style data and a multi-agent architecture.
 ## Current Milestone
 
 ```text
-Functional Multi-Agent BI MVP with Azure SQL, MCP and deterministic validation utilities
-```
+Functional Multi-Agent BI MVP with modular Python workflow, semantic context selection, deterministic validation utilities and 19 passing tests

@@ -1,4 +1,4 @@
-from agents.src.critic_parser import (
+from agents.validators.critic_parser import (
     critic_requires_revision,
     get_normalized_critic_decision,
 )

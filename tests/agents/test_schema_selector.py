@@ -1,4 +1,4 @@
-from agents.src.schema_selector import score_candidate
+from agents.context_selectors.schema_selector import score_candidate
 
 
 def test_score_prefers_yearly_sales_view_for_year_question():

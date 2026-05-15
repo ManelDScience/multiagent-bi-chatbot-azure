@@ -1,4 +1,4 @@
-from agents.src.sql_parser import extract_sql_from_markdown
+from agents.utils.sql_parser import extract_sql_from_markdown
 
 
 def test_extract_sql_from_markdown_block():

@@ -1,4 +1,4 @@
-from agents.src.semantic_selector import (
+from agents.context_selectors.semantic_selector import (
     extract_sections,
     score_section,
     select_semantic_context,

@@ -32,6 +32,8 @@ Debes elegir una única validación:
 - No pidas especular sobre causas.
 - No pidas advertir sobre datos parciales salvo que el resultado SQL lo indique explícitamente.
 - No bloquees por detalles menores de estilo.
+- Si la validación tabular por código indica OK, no marques REQUIERE REVISIÓN por supuestas omisiones de filas, diferencias de formato numérico o traducción de meses.
+- En caso de conflicto entre tu revisión y el Table Validator, prevalece el Table Validator para validaciones estructuradas.
 - No marques REQUIERE REVISIÓN por diferencias de formato numérico si el valor es equivalente.
 - En respuestas en español, acepta formato europeo: punto para miles y coma para decimales.
 - Considera equivalentes `381585.35`, `381,585.35` y `381.585,35`.

@@ -1,6 +1,9 @@
 def critic_requires_revision(critic_output: str) -> bool:
     text = critic_output.upper()
 
+    if "NO CONCLUYENTE" in text:
+        return True
+
     if "RECOMENDACIÓN" in text and "APROBADA" in text:
         return False
 
@@ -10,7 +13,7 @@ def critic_requires_revision(critic_output: str) -> bool:
     if "REQUIERE REVISIÓN" in text or "REQUIERE REVISION" in text:
         return True
 
-    return False
+    return True
 
 
 def get_normalized_critic_decision(critic_output: str) -> str:

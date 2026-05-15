@@ -2,6 +2,20 @@ import json
 import re
 from typing import Any
 
+MONTH_TRANSLATIONS = {
+    "january": ["january", "enero"],
+    "february": ["february", "febrero"],
+    "march": ["march", "marzo"],
+    "april": ["april", "abril"],
+    "may": ["may", "mayo"],
+    "june": ["june", "junio"],
+    "july": ["july", "julio"],
+    "august": ["august", "agosto"],
+    "september": ["september", "septiembre"],
+    "october": ["october", "octubre"],
+    "november": ["november", "noviembre"],
+    "december": ["december", "diciembre"],
+}
 
 def parse_query_result(query_result: str) -> list[dict[str, Any]]:
     try:
@@ -44,6 +58,9 @@ def value_appears_in_text(value: Any, text: str) -> bool:
         european,
         european.rstrip("0").rstrip(","),
     }
+
+    if raw in MONTH_TRANSLATIONS:
+        variants.update(MONTH_TRANSLATIONS[raw])
 
     return any(variant in text_lower for variant in variants if variant)
 

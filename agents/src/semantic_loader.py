@@ -1,6 +1,16 @@
 from pathlib import Path
 
 
+def find_project_root() -> Path:
+    current = Path(__file__).resolve()
+
+    for parent in current.parents:
+        if (parent / "semantic-layer").exists():
+            return parent
+
+    raise FileNotFoundError("No se encontró la carpeta semantic-layer.")
+
+
 def read_file_if_exists(path: Path) -> str:
     if not path.exists():
         return ""
@@ -9,8 +19,7 @@ def read_file_if_exists(path: Path) -> str:
 
 
 def load_semantic_context() -> str:
-    project_root = Path(__file__).resolve().parents[2]
-
+    project_root = find_project_root()
     semantic_path = project_root / "semantic-layer"
 
     files = {
@@ -25,8 +34,7 @@ def load_semantic_context() -> str:
         content = read_file_if_exists(path)
 
         if content:
-            sections.append(f"""
-## {title}
+            sections.append(f"""## {title}
 
 {content}
 """)

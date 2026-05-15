@@ -313,6 +313,34 @@ get_normalized_critic_decision(critic_output)
 
 ---
 
+### Automated Tests
+
+The MVP now includes a basic automated test suite focused on deterministic utilities and agent behavior.
+
+Current tests cover:
+
+```text
+SQL parser
+Critic parser
+Table validator
+Schema selector scoring
+Critic agent behavior
+```
+
+Run from the repository root:
+
+```bash
+python -m pytest tests
+```
+
+Latest validated result:
+
+```text
+15 passed
+```
+
+---
+
 ## 4. Validated Demo Scenarios
 
 ## Demo 1 — Total Sales by Year
@@ -602,7 +630,14 @@ Critic Decision → APROBADA
 │   └── mvp-demo.md
 │
 ├── tests/
-│   └── README.md
+│   ├── conftest.py
+│   ├── README.md
+│   └── agents/
+│       ├── test_critic_agent.py
+│       ├── test_critic_parser.py
+│       ├── test_schema_selector.py
+│       ├── test_sql_parser.py
+│       └── test_table_validator.py
 │
 ├── README.md
 └── LICENSE
@@ -718,7 +753,7 @@ Select only relevant semantic definitions per question.
 
 ---
 
-### Critic Agent can be inconsistent
+### Critic Agent can still be inconsistent
 
 The Critic Agent may sometimes produce contradictory output.
 
@@ -735,22 +770,30 @@ Current mitigation:
 Critic Decision is normalized by code.
 ```
 
-Actual improvement:
+Current mitigation:
 
 ```text
-- Tabular validation is now partially deterministic, but still basic.
+Critic Decision is normalized by code.
+Table Validator provides deterministic coverage checks before Critic review.
 ```
 
 ---
 
-### Long tabular answers are hard for LLM validation
+### Long tabular answers are still challenging
 
 For long lists, the Critic Agent may incorrectly claim that rows are missing.
+
+Current mitigation:
+
+```text
+Table Validator checks whether key SQL result values appear in the Analyst response.
+Numeric formats are normalized before validation.
+```
 
 Future improvement:
 
 ```text
-Validate row counts and values by code.
+Validate row counts and values more deeply by code.
 Use LLM only for qualitative review.
 ```
 
@@ -779,19 +822,34 @@ Document MonthName language in the semantic layer.
 
 ---
 
-### No automated tests yet
+### Automated tests are still basic
 
-The current workflow has been manually validated.
+The project now includes a basic automated test suite.
+
+Current coverage:
+
+```text
+- SQL parser
+- Critic parser
+- Table validator
+- Schema selector scoring
+- Critic agent behavior
+```
+
+Latest validated result:
+
+```text
+15 passed
+```
 
 Future improvement:
 
 ```text
 Add tests for:
-- SQL parser
-- schema selector scoring
-- critic parser
-- MCP client
-- prompt regression cases
+- MCP client with mocks
+- End-to-end flows
+- Prompt regression cases
+- Error handling
 ```
 
 ---
@@ -801,13 +859,13 @@ Add tests for:
 ### Next steps
 
 ```text
-1. Keep improving documentation and README.
+1. Expand tests beyond core utilities.
 2. Upgrade deterministic validation for tabular outputs.
 3. Improve semantic context selection.
-4. Add tests.
-5. Improve schema selector.
-6. Add logging.
-7. Add demo scripts.
+4. Improve schema selector.
+5. Add logging.
+6. Add demo scripts.
+7. Add error handling and retries.
 8. Migrate orchestration to Microsoft Agent Framework.
 ```
 
@@ -891,6 +949,8 @@ Business answer generation
 Critic validation
 Automatic revision
 Normalized final decision
+Deterministic table validation
+Basic automated tests
 ```
 
 Validated questions:
@@ -904,9 +964,10 @@ Validated questions:
 Current recommended next milestone:
 
 ```text
-Prepare the project for portfolio presentation:
-- Improve README
-- Add architecture diagram
-- Add demo instructions
-- Add screenshots/log examples
+Improve engineering robustness:
+- Expand tests
+- Add MCP client mocks
+- Add end-to-end test cases
+- Improve semantic context selection
+- Add architecture diagram and screenshots/log examples
 ```

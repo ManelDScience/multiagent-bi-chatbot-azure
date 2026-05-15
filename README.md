@@ -37,7 +37,11 @@ Data Quality Agent
   ↓
 Analyst Agent
   ↓
+Table Validator
+  ↓
 Critic Agent
+  ↓
+Critic Decision
   ↓
 Final validated answer
 ```
@@ -67,7 +71,9 @@ The assistant can currently:
 - Retrieve real data from Azure SQL.
 - Validate basic data quality.
 - Generate a business-readable answer.
+- Validate tabular outputs deterministically.
 - Review the answer with a Critic Agent.
+- Normalize the Critic decision by code.
 - Trigger one automatic revision if needed.
 
 ---
@@ -317,10 +323,45 @@ A normalized critic decision is produced by code to avoid relying only on free-f
 │   └── mvp-demo.md
 │
 ├── tests/
-│   └── README.md
+│   ├── conftest.py
+│   ├── README.md
+│   └── agents/
+│       ├── test_critic_agent.py
+│       ├── test_critic_parser.py
+│       ├── test_schema_selector.py
+│       ├── test_sql_parser.py
+│       └── test_table_validator.py
 │
 ├── README.md
 └── LICENSE
+```
+
+---
+
+## Tests
+
+The project now includes a basic automated test suite for key deterministic utilities.
+
+Current coverage:
+
+```text
+SQL parser
+Critic parser
+Table validator
+Schema selector scoring
+Critic agent behavior
+```
+
+Run tests from the repository root:
+
+```bash
+python -m pytest tests
+```
+
+Latest validated result:
+
+```text
+15 passed
 ```
 
 ---
@@ -362,8 +403,9 @@ ORDER BY total_sales_perCustomer DESC;
 - The agent orchestration is still manual in Python.
 - The Schema Selector uses rule-based scoring.
 - The semantic layer is loaded fully, not selectively.
-- The Critic Agent can be inconsistent on long tabular outputs.
-- No automated test suite is implemented yet.
+- The Critic Agent can still be inconsistent on long tabular outputs, although the final decision is normalized by code.
+- Tabular validation is deterministic but still basic.
+- The current test suite covers core utilities, but end-to-end tests are not implemented yet.
 - Monthly ordering should be improved by adding `MonthNumber` to the view.
 
 ---
@@ -375,8 +417,8 @@ ORDER BY total_sales_perCustomer DESC;
 - Improve README and documentation.
 - Add architecture diagram.
 - Add demo scripts.
-- Add basic tests.
-- Add deterministic validation for tabular outputs.
+- Expand tests beyond core utilities.
+- Improve deterministic validation for tabular outputs.
 - Improve schema selector scoring.
 
 ### Medium term
@@ -425,5 +467,5 @@ using real enterprise-style data and a multi-agent architecture.
 ## Current Milestone
 
 ```text
-Functional Multi-Agent BI MVP with Azure SQL and MCP
+Functional Multi-Agent BI MVP with Azure SQL, MCP and deterministic validation utilities
 ```

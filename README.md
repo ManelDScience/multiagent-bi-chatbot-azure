@@ -363,7 +363,6 @@ ORDER BY total_sales_perCustomer DESC;
 - The Schema Selector uses rule-based scoring.
 - The semantic layer is loaded fully, not selectively.
 - The Critic Agent can be inconsistent on long tabular outputs.
-- Tabular validation is not yet deterministic.
 - No automated test suite is implemented yet.
 - Monthly ordering should be improved by adding `MonthNumber` to the view.
 

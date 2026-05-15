@@ -19,6 +19,8 @@ User question
   ↓
 Semantic Layer Loader
   ↓
+Semantic Context Selector
+  ↓
 Planner Agent
   ↓
 Schema Selector
@@ -40,8 +42,6 @@ Analyst Agent
 Table Validator
   ↓
 Critic Agent
-  ↓
-Critic Decision
   ↓
 Final validated answer
 ```
@@ -167,6 +167,29 @@ semantic-layer/business_rules.md
 ```
 
 This gives the agents additional context about metrics, dimensions and business rules.
+
+---
+
+### Semantic Context Selector
+
+Selects the most relevant semantic context for each user question.
+
+Instead of passing the full semantic layer to every agent, it scores semantic sections based on the user question and keeps only the most relevant context.
+
+Current behavior:
+
+- Reads the loaded semantic layer.
+- Extracts semantic sections.
+- Scores sections using keyword matching.
+- Selects the most relevant metric, dimension and business rule context.
+- Prints selection traceability.
+
+This reduces prompt size and improves explainability.
+
+Current limitation:
+
+- It uses simple keyword scoring.
+- It does not use embeddings or vector search yet.
 
 ---
 
@@ -340,16 +363,17 @@ A normalized critic decision is produced by code to avoid relying only on free-f
 
 ## Tests
 
-The project now includes a basic automated test suite for key deterministic utilities.
+The project includes basic automated tests for core utility modules.
 
-Current coverage:
+Current coverage includes:
 
 ```text
-SQL parser
-Critic parser
-Table validator
-Schema selector scoring
-Critic agent behavior
+- SQL parser.
+- Critic parser.
+- Table validator.
+- Schema selector scoring.
+- Semantic context selector.
+- Critic agent behavior.
 ```
 
 Run tests from the repository root:
@@ -358,10 +382,10 @@ Run tests from the repository root:
 python -m pytest tests
 ```
 
-Latest validated result:
+Current result:
 
 ```text
-15 passed
+19 passed
 ```
 
 ---
@@ -404,7 +428,8 @@ ORDER BY total_sales_perCustomer DESC;
 - The Schema Selector uses rule-based scoring.
 - The semantic layer is loaded fully, not selectively.
 - The Critic Agent can still be inconsistent on long tabular outputs, although the final decision is normalized by code.
-- Tabular validation is deterministic but still basic.
+- Semantic context selection is now implemented with simple keyword scoring, but not yet with embeddings or RAG.
+- Tabular validation is partially deterministic and supports numeric normalization and month name translations.
 - The current test suite covers core utilities, but end-to-end tests are not implemented yet.
 - Monthly ordering should be improved by adding `MonthNumber` to the view.
 
@@ -414,12 +439,12 @@ ORDER BY total_sales_perCustomer DESC;
 
 ### Short term
 
-- Improve README and documentation.
+- Improve semantic context selection.
+- Add deterministic validation for more table patterns.
+- Add more tests for agent utilities.
+- Improve schema selector scoring.
 - Add architecture diagram.
 - Add demo scripts.
-- Expand tests beyond core utilities.
-- Improve deterministic validation for tabular outputs.
-- Improve schema selector scoring.
 
 ### Medium term
 

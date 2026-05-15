@@ -8,18 +8,28 @@ from src.critic_agent import run_critic_agent
 from src.critic_parser import critic_requires_revision, get_normalized_critic_decision
 from src.data_quality_agent import run_data_quality_agent
 from src.semantic_loader import load_semantic_context
+from src.table_validator import validate_table_coverage
+from src.semantic_selector import select_semantic_context
 
 def main():
     print("Multi-Agent BI Assistant")
     print("------------------------")
 
     user_question = input("\nPregunta de negocio: ")
-    semantic_context = load_semantic_context()
+    full_semantic_context = load_semantic_context()
+
+    semantic_context = select_semantic_context(
+        user_question=user_question,
+        semantic_context=full_semantic_context,
+    )
 
     planner_output = run_planner(
         user_question = user_question,
         semantic_context = semantic_context,
         )
+
+    print("\n[Semantic Context Selector]")
+    print(semantic_context)
 
     print("\n[Planner Agent]")
     print(planner_output)
@@ -63,11 +73,21 @@ def main():
     print("\n[Analyst Agent]")
     print(analyst_output)
 
+    table_validation_output = validate_table_coverage(
+    query_result=query_result,
+    analyst_output=analyst_output,
+    )
+
+    print("\n[Table Validator]")
+    print(table_validation_output)
+
     critic_output = run_critic_agent(
     user_question=user_question,
     query_result=query_result,
     analyst_output=analyst_output,
+    table_validation_output=table_validation_output,
     )
+
 
     print("\n[Critic Agent]")
     print(critic_output)
@@ -88,15 +108,32 @@ def main():
         print("\n[Analyst Agent - Revisado]")
         print(analyst_output)
 
+        table_validation_output = validate_table_coverage(
+            query_result=query_result,
+            analyst_output=analyst_output,
+            max_rows_to_check=100,
+        )
+
+        print("\n[Table Validator - Revisado]")
+        print(table_validation_output)
+
         critic_output = run_critic_agent(
             user_question=user_question,
             query_result=query_result,
             analyst_output=analyst_output,
+            table_validation_output=table_validation_output,
         )
 
         print("\n[Critic Agent - Revisión final]")
         print(critic_output)
 
+        final_critic_decision = get_normalized_critic_decision(critic_output)
+
+        if "## Table Validator\n\nOK" in table_validation_output:
+            final_critic_decision = "APROBADA"
+
+        print("\n[Critic Decision - Revisión final]")
+        print(final_critic_decision)
 
 if __name__ == "__main__":
     main()

@@ -32,6 +32,8 @@ Debes elegir una única validación:
 - No pidas especular sobre causas.
 - No pidas advertir sobre datos parciales salvo que el resultado SQL lo indique explícitamente.
 - No bloquees por detalles menores de estilo.
+- Si la validación tabular por código indica OK, no marques REQUIERE REVISIÓN por supuestas omisiones de filas, diferencias de formato numérico o traducción de meses.
+- En caso de conflicto entre tu revisión y el Table Validator, prevalece el Table Validator para validaciones estructuradas.
 - No marques REQUIERE REVISIÓN por diferencias de formato numérico si el valor es equivalente.
 - En respuestas en español, acepta formato europeo: punto para miles y coma para decimales.
 - Considera equivalentes `381585.35`, `381,585.35` y `381.585,35`.
@@ -39,6 +41,8 @@ Debes elegir una única validación:
 - La validación y la recomendación deben ser coherentes entre sí.
 - No marques REQUIERE REVISIÓN por supuestas omisiones en listas largas si no puedes identificar exactamente qué fila del resultado SQL falta.
 - Si la respuesta contiene todos los años o categorías principales visibles y no hay cifras claramente incorrectas, marca APROBADA.
+- Si la validación tabular por código indica OK, no marques REQUIERE REVISIÓN por diferencias de formato numérico o por supuestas omisiones de filas.
+- La validación tabular por código tiene prioridad sobre tu revisión manual de cifras.
 - Para listas largas, prioriza validar estructura general, no comparar fila por fila.
 Si el Critic final sigue en REQUIERE REVISIÓN después de 1 reintento:
 → mostrar “Revisión no concluyente”

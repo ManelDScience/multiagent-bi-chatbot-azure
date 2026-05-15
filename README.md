@@ -19,6 +19,8 @@ User question
   ↓
 Semantic Layer Loader
   ↓
+Semantic Context Selector
+  ↓
 Planner Agent
   ↓
 Schema Selector
@@ -36,6 +38,8 @@ Azure SQL Database
 Data Quality Agent
   ↓
 Analyst Agent
+  ↓
+Table Validator
   ↓
 Critic Agent
   ↓
@@ -67,7 +71,9 @@ The assistant can currently:
 - Retrieve real data from Azure SQL.
 - Validate basic data quality.
 - Generate a business-readable answer.
+- Validate tabular outputs deterministically.
 - Review the answer with a Critic Agent.
+- Normalize the Critic decision by code.
 - Trigger one automatic revision if needed.
 
 ---
@@ -121,6 +127,10 @@ The assistant can currently:
 └─────────┬──────────┘
           ↓
 ┌────────────────────┐
+│ Tabular Validator  │
+└─────────┬──────────┘
+          ↓
+┌────────────────────┐
 │ Critic Agent       │
 └─────────┬──────────┘
           ↓
@@ -157,6 +167,29 @@ semantic-layer/business_rules.md
 ```
 
 This gives the agents additional context about metrics, dimensions and business rules.
+
+---
+
+### Semantic Context Selector
+
+Selects the most relevant semantic context for each user question.
+
+Instead of passing the full semantic layer to every agent, it scores semantic sections based on the user question and keeps only the most relevant context.
+
+Current behavior:
+
+- Reads the loaded semantic layer.
+- Extracts semantic sections.
+- Scores sections using keyword matching.
+- Selects the most relevant metric, dimension and business rule context.
+- Prints selection traceability.
+
+This reduces prompt size and improves explainability.
+
+Current limitation:
+
+- It uses simple keyword scoring.
+- It does not use embeddings or vector search yet.
 
 ---
 
@@ -248,6 +281,14 @@ It focuses on:
 
 ---
 
+### Table Validator
+
+Performs deterministic checks over structured SQL results before the Critic Agent reviews the final answer.
+
+It helps validate that key values from the SQL result are present in the Analyst response, while normalizing numeric formats such as European and SQL decimal notation.
+
+---
+
 ### Critic Agent
 
 Reviews the Analyst Agent response.
@@ -305,10 +346,46 @@ A normalized critic decision is produced by code to avoid relying only on free-f
 │   └── mvp-demo.md
 │
 ├── tests/
-│   └── README.md
+│   ├── conftest.py
+│   ├── README.md
+│   └── agents/
+│       ├── test_critic_agent.py
+│       ├── test_critic_parser.py
+│       ├── test_schema_selector.py
+│       ├── test_sql_parser.py
+│       └── test_table_validator.py
 │
 ├── README.md
 └── LICENSE
+```
+
+---
+
+## Tests
+
+The project includes basic automated tests for core utility modules.
+
+Current coverage includes:
+
+```text
+- SQL parser.
+- Critic parser.
+- Table validator.
+- Schema selector scoring.
+- Semantic context selector.
+- Critic agent behavior.
+```
+
+Run tests from the repository root:
+
+```bash
+python -m pytest tests
+```
+
+Current result:
+
+```text
+19 passed
 ```
 
 ---
@@ -350,9 +427,10 @@ ORDER BY total_sales_perCustomer DESC;
 - The agent orchestration is still manual in Python.
 - The Schema Selector uses rule-based scoring.
 - The semantic layer is loaded fully, not selectively.
-- The Critic Agent can be inconsistent on long tabular outputs.
-- Tabular validation is not yet deterministic.
-- No automated test suite is implemented yet.
+- The Critic Agent can still be inconsistent on long tabular outputs, although the final decision is normalized by code.
+- Semantic context selection is now implemented with simple keyword scoring, but not yet with embeddings or RAG.
+- Tabular validation is partially deterministic and supports numeric normalization and month name translations.
+- The current test suite covers core utilities, but end-to-end tests are not implemented yet.
 - Monthly ordering should be improved by adding `MonthNumber` to the view.
 
 ---
@@ -361,12 +439,12 @@ ORDER BY total_sales_perCustomer DESC;
 
 ### Short term
 
-- Improve README and documentation.
+- Improve semantic context selection.
+- Add deterministic validation for more table patterns.
+- Add more tests for agent utilities.
+- Improve schema selector scoring.
 - Add architecture diagram.
 - Add demo scripts.
-- Add basic tests.
-- Add deterministic validation for tabular outputs.
-- Improve schema selector scoring.
 
 ### Medium term
 
@@ -414,5 +492,5 @@ using real enterprise-style data and a multi-agent architecture.
 ## Current Milestone
 
 ```text
-Functional Multi-Agent BI MVP with Azure SQL and MCP
+Functional Multi-Agent BI MVP with Azure SQL, MCP and deterministic validation utilities
 ```

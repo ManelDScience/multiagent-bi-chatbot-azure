@@ -4,7 +4,7 @@
 
 This MVP demonstrates a **multi-agent Business Intelligence assistant** capable of answering business questions in natural language using real data from Azure SQL.
 
-The system receives a business question, plans the analysis, selects the most relevant data context, generates SQL, executes the query safely through an MCP Server, validates the result, produces a business-readable answer and reviews it before delivery.
+The system receives a business question, loads semantic business context, selects only the most relevant semantic definitions, plans the analysis, selects the most relevant data context, generates SQL, executes the query safely through an MCP Server, validates the result, produces a business-readable answer, validates table coverage deterministically and reviews the answer before delivery.
 
 The current goal is not to build a final product yet, but to validate the core architecture of an agentic BI workflow.
 
@@ -16,6 +16,8 @@ The current goal is not to build a final product yet, but to validate the core a
 User question
   ↓
 Semantic Layer Loader
+  ↓
+Semantic Context Selector
   ↓
 Planner Agent
   ↓
@@ -34,6 +36,8 @@ Azure SQL Database
 Data Quality Agent
   ↓
 Analyst Agent
+  ↓
+Table Validator
   ↓
 Critic Agent
   ↓
@@ -90,10 +94,45 @@ Purpose:
 - Reduce ambiguity.
 - Give agents additional context about metrics, dimensions and rules.
 
+---
+
+### Semantic Context Selector
+
+Filters the semantic layer before passing it to the agents.
+
+Instead of passing the full semantic layer to every agent, it scores semantic sections against the user question and keeps only the most relevant context.
+
+Example:
+
+```text
+Question:
+¿Cuáles son las ventas totales por año?
+
+Selected semantic context:
+- Total Sales
+- Time
+- Time granularity
+```
+
+Current behavior:
+
+- Reads the loaded semantic layer.
+- Extracts semantic sections.
+- Scores sections using keyword matching.
+- Selects the most relevant metric, dimension and business rule context.
+- Prints selection traceability.
+
+Benefits:
+
+- Reduces prompt size.
+- Improves traceability.
+- Avoids sending unnecessary semantic context.
+- Keeps the MVP simple without requiring embeddings yet.
+
 Current limitation:
 
-- The full semantic layer is loaded.
-- There is no selective retrieval yet.
+- It uses simple keyword scoring.
+- It does not use embeddings, vector search or RAG yet.
 
 ---
 
@@ -113,7 +152,8 @@ It currently uses a simple scoring approach based on:
 Example:
 
 ```text
-Question: ¿Cuáles son las ventas totales por año?
+Question:
+¿Cuáles son las ventas totales por año?
 
 Selected view:
 agg.TotalSalesPerYear
@@ -255,6 +295,37 @@ Responsibilities:
 
 ---
 
+### Table Validator
+
+Performs deterministic validation over structured SQL results.
+
+Responsibilities:
+
+- Parse SQL results as JSON.
+- Compare query result values with the Analyst Agent response.
+- Normalize numeric formats.
+- Accept equivalent numeric formats such as:
+  - `381585.35`
+  - `381,585.35`
+  - `381.585,35`
+- Detect possible missing values in tabular answers.
+- Provide a deterministic validation signal to the Critic Agent.
+
+The validator also supports equivalent month names between English SQL results and Spanish business responses.
+
+Example:
+
+```text
+SQL result: January
+Analyst response: Enero
+```
+
+This is accepted as equivalent.
+
+This reduces the risk of the Critic Agent incorrectly flagging valid answers due to formatting differences, translated month names or long lists.
+
+---
+
 ### Critic Agent
 
 Reviews the Analyst Agent response before final delivery.
@@ -266,6 +337,8 @@ Checks:
 - Whether the answer invents causes.
 - Whether the response is understandable for business users.
 - Whether the response needs revision.
+
+The Critic Agent receives the deterministic Table Validator output as additional context.
 
 ---
 
@@ -289,6 +362,8 @@ critic_requires_revision(critic_output)
 get_normalized_critic_decision(critic_output)
 ```
 
+The system now treats inconclusive Critic outputs as requiring revision unless a deterministic validation signal supports approval.
+
 ---
 
 ## 4. Validated Demo Scenarios
@@ -299,6 +374,14 @@ get_normalized_critic_decision(critic_output)
 
 ```text
 ¿Cuáles son las ventas totales por año?
+```
+
+### Selected semantic context
+
+```text
+Total Sales
+Time
+Time granularity
 ```
 
 ### Selected schema
@@ -358,14 +441,13 @@ Las ventas totales por año son las siguientes:
 - 2014: 49.929.487,20
 - 2015: 53.991.490,45
 - 2016: 22.633.175,55
-
-Se observa un incremento en las ventas de 2013 a 2015 y una disminución en 2016.
 ```
 
 ### Validation
 
 ```text
 Data Quality Agent → OK
+Table Validator → OK
 Critic Decision → APROBADA
 ```
 
@@ -377,6 +459,14 @@ Critic Decision → APROBADA
 
 ```text
 ¿Cuáles son los clientes con más ventas?
+```
+
+### Selected semantic context
+
+```text
+Total Sales
+Customer
+Ranking queries
 ```
 
 ### Selected schema
@@ -402,7 +492,7 @@ FROM agg.CustomerPerTotalSales
 ORDER BY total_sales_perCustomer DESC;
 ```
 
-### Result returned by Azure SQL
+### Example result returned by Azure SQL
 
 ```json
 [
@@ -446,6 +536,7 @@ Los diez clientes con más ventas son:
 
 ```text
 Data Quality Agent → OK
+Table Validator → OK
 Critic Decision → APROBADA
 ```
 
@@ -457,6 +548,15 @@ Critic Decision → APROBADA
 
 ```text
 ¿Cuáles fueron las ventas totales por mes?
+```
+
+### Selected semantic context
+
+```text
+Total Sales
+Time
+Time granularity
+Data interpretation
 ```
 
 ### Selected schema
@@ -479,9 +579,26 @@ total_sales_peryear
 SELECT
     Year,
     MonthName,
-    total_sales_peryear
-FROM agg.TotalSalesPerMonthYear
-ORDER BY Year, MonthName;
+    total_sales_peryear AS TotalSales
+FROM
+    agg.TotalSalesPerMonthYear
+ORDER BY
+    Year,
+    CASE
+        WHEN MonthName = 'January' THEN 1
+        WHEN MonthName = 'February' THEN 2
+        WHEN MonthName = 'March' THEN 3
+        WHEN MonthName = 'April' THEN 4
+        WHEN MonthName = 'May' THEN 5
+        WHEN MonthName = 'June' THEN 6
+        WHEN MonthName = 'July' THEN 7
+        WHEN MonthName = 'August' THEN 8
+        WHEN MonthName = 'September' THEN 9
+        WHEN MonthName = 'October' THEN 10
+        WHEN MonthName = 'November' THEN 11
+        WHEN MonthName = 'December' THEN 12
+        ELSE 13
+    END;
 ```
 
 ### Example result returned by Azure SQL
@@ -491,17 +608,17 @@ ORDER BY Year, MonthName;
   {
     "Year": 2013,
     "MonthName": "January",
-    "total_sales_peryear": 3770410.85
+    "TotalSales": 3770410.85
   },
   {
     "Year": 2013,
     "MonthName": "February",
-    "total_sales_peryear": 2776786.2
+    "TotalSales": 2776786.2
   },
   {
     "Year": 2013,
     "MonthName": "March",
-    "total_sales_peryear": 3870505.3
+    "TotalSales": 3870505.3
   }
 ]
 ```
@@ -509,12 +626,13 @@ ORDER BY Year, MonthName;
 ### Final business answer
 
 ```text
-Las ventas totales por mes en los años 2013 a 2016 son las siguientes:
+A continuación se presentan las ventas totales por mes y año:
 
 2013:
 - Enero: 3.770.410,85 €
 - Febrero: 2.776.786,20 €
 - Marzo: 3.870.505,30 €
+- Abril: 4.059.606,85 €
 ...
 
 2016:
@@ -529,12 +647,68 @@ Las ventas totales por mes en los años 2013 a 2016 son las siguientes:
 
 ```text
 Data Quality Agent → OK
+Table Validator → OK
 Critic Decision → APROBADA
 ```
 
+### Important behavior validated
+
+The SQL result returns month names in English:
+
+```text
+January
+February
+March
+```
+
+The Analyst response presents them in Spanish:
+
+```text
+Enero
+Febrero
+Marzo
+```
+
+The Table Validator accepts these as equivalent.
+
 ---
 
-## 5. Current Repository Structure
+## 5. Automated Tests
+
+The project includes basic automated tests with `pytest`.
+
+Current tested modules:
+
+```text
+tests/agents/test_sql_parser.py
+tests/agents/test_critic_parser.py
+tests/agents/test_table_validator.py
+tests/agents/test_schema_selector.py
+tests/agents/test_semantic_selector.py
+tests/agents/test_critic_agent.py
+```
+
+Current result:
+
+```text
+19 passed
+```
+
+The tests cover:
+
+- SQL extraction from Markdown.
+- Critic decision normalization.
+- Handling inconclusive Critic outputs.
+- Deterministic table validation.
+- European number format handling.
+- English/Spanish month equivalence.
+- Schema selector scoring.
+- Semantic context selection.
+- Basic Critic Agent behavior.
+
+---
+
+## 6. Current Repository Structure
 
 ```text
 .
@@ -558,6 +732,8 @@ Critic Decision → APROBADA
 │       ├── sql_parser.py
 │       ├── schema_selector.py
 │       ├── semantic_loader.py
+│       ├── semantic_selector.py
+│       ├── table_validator.py
 │       └── critic_parser.py
 │
 ├── mcp-server/
@@ -579,7 +755,14 @@ Critic Decision → APROBADA
 │   └── mvp-demo.md
 │
 ├── tests/
-│   └── README.md
+│   ├── conftest.py
+│   └── agents/
+│       ├── test_sql_parser.py
+│       ├── test_critic_parser.py
+│       ├── test_table_validator.py
+│       ├── test_schema_selector.py
+│       ├── test_semantic_selector.py
+│       └── test_critic_agent.py
 │
 ├── README.md
 └── LICENSE
@@ -587,7 +770,7 @@ Critic Decision → APROBADA
 
 ---
 
-## 6. Technical Decisions
+## 7. Technical Decisions
 
 ### Manual orchestration before Microsoft Agent Framework
 
@@ -661,7 +844,20 @@ Benefits:
 
 ---
 
-## 7. Current Limitations
+### Deterministic validation before LLM validation
+
+The system now separates deterministic validation from qualitative LLM validation.
+
+```text
+Structured validation → Table Validator by code
+Qualitative review → Critic Agent
+```
+
+This reduces the risk of LLM-based validation errors on long lists, translated values or numeric formatting.
+
+---
+
+## 8. Current Limitations
 
 ### Schema Selector is still simple
 
@@ -681,16 +877,14 @@ Domain routing
 
 ---
 
-### Semantic layer is loaded completely
+### Semantic Context Selector is basic
 
-Currently, all semantic files are loaded into the prompt.
-
-This is acceptable for the MVP, but not scalable.
+The semantic layer is now filtered by a basic Semantic Context Selector, but the selection still uses simple keyword scoring instead of embeddings or RAG.
 
 Future improvement:
 
 ```text
-Select only relevant semantic definitions per question.
+Use embeddings or semantic search to retrieve only the most relevant definitions.
 ```
 
 ---
@@ -710,12 +904,14 @@ Current mitigation:
 
 ```text
 Critic Decision is normalized by code.
+Table Validator output is used as deterministic validation signal.
 ```
 
 Future improvement:
 
 ```text
-Use deterministic validators for tabular outputs.
+Use more deterministic validators for tabular outputs.
+Use LLM only for qualitative review.
 ```
 
 ---
@@ -723,6 +919,12 @@ Use deterministic validators for tabular outputs.
 ### Long tabular answers are hard for LLM validation
 
 For long lists, the Critic Agent may incorrectly claim that rows are missing.
+
+Current mitigation:
+
+```text
+Table Validator checks result coverage by code.
+```
 
 Future improvement:
 
@@ -745,7 +947,7 @@ total_sales_peryear
 
 But it does not include `MonthNumber`.
 
-This makes chronological ordering harder.
+This makes chronological ordering harder and forces the SQL Agent to generate a CASE statement.
 
 Future improvement:
 
@@ -756,36 +958,70 @@ Document MonthName language in the semantic layer.
 
 ---
 
-### No automated tests yet
+### Test suite is still small
 
-The current workflow has been manually validated.
+The project now includes basic tests, but coverage is still limited.
+
+Current result:
+
+```text
+19 passed
+```
 
 Future improvement:
 
 ```text
 Add tests for:
-- SQL parser
-- schema selector scoring
-- critic parser
-- MCP client
-- prompt regression cases
+- MCP client behavior
+- SQL Agent prompt regression cases
+- Data Quality Agent outputs
+- Semantic selector edge cases
+- End-to-end smoke tests
 ```
 
 ---
 
-## 8. Roadmap
+## 9. Roadmap
 
-### Next steps
+### Immediate next steps
 
 ```text
-1. Improve documentation and README.
-2. Add deterministic validation for tabular outputs.
-3. Improve semantic context selection.
-4. Add tests.
-5. Improve schema selector.
-6. Add logging.
-7. Add demo scripts.
-8. Migrate orchestration to Microsoft Agent Framework.
+1. Improve Semantic Context Selector robustness.
+2. Add more deterministic validators for tabular outputs.
+3. Add more regression tests.
+4. Improve schema selector scoring.
+5. Add architecture diagram.
+```
+
+### Short term
+
+```text
+1. Improve README and documentation.
+2. Add architecture diagram.
+3. Add demo scripts.
+4. Add more tests for agent utilities.
+5. Add deterministic validation for more table patterns.
+6. Improve schema selector scoring.
+```
+
+### Medium term
+
+```text
+1. Add semantic context retrieval with embeddings or RAG.
+2. Add logging and observability.
+3. Add a simple UI or API layer.
+4. Improve error handling and retries.
+5. Add portfolio-ready screenshots and demo outputs.
+```
+
+### Long term
+
+```text
+1. Migrate orchestration to Microsoft Agent Framework.
+2. Deploy the Python agent workflow.
+3. Integrate more domains/datamarts.
+4. Add stronger governance and human-in-the-loop controls.
+5. Prepare a cloud-ready enterprise architecture.
 ```
 
 ### Future architecture
@@ -795,9 +1031,9 @@ User / UI
   ↓
 Microsoft Agent Framework Orchestrator
   ↓
-Planner Agent
-  ↓
 Semantic Context Retriever
+  ↓
+Planner Agent
   ↓
 Schema Selector
   ↓
@@ -811,6 +1047,8 @@ Data Quality Agent
   ↓
 Analyst Agent
   ↓
+Table Validator
+  ↓
 Critic Agent
   ↓
 Final Answer
@@ -818,7 +1056,7 @@ Final Answer
 
 ---
 
-## 9. Portfolio Value
+## 10. Portfolio Value
 
 This project demonstrates practical experience with:
 
@@ -830,9 +1068,12 @@ This project demonstrates practical experience with:
 - Python agent workflows.
 - JavaScript backend tooling.
 - Semantic layers.
+- Semantic context selection.
 - SQL generation.
 - Data quality validation.
+- Deterministic table validation.
 - Answer validation and revision loops.
+- Automated testing.
 - Cloud-ready architecture.
 
 It is positioned as an **Agentic BI Assistant** rather than a simple SQL chatbot.
@@ -842,12 +1083,12 @@ The core value proposition:
 ```text
 From natural language business questions
 to validated BI answers
-using a multi-agent architecture connected to real enterprise data.
+using a multi-agent architecture connected to real enterprise-style data.
 ```
 
 ---
 
-## 10. Current MVP Status
+## 11. Current MVP Status
 
 ```text
 Status: Functional MVP
@@ -857,17 +1098,21 @@ Validated capabilities:
 
 ```text
 Business question understanding
+Semantic layer loading
+Semantic context selection
 Planning
-Semantic context loading
 Schema selection
 SQL generation
+SQL parsing
 SQL execution through MCP
 Azure SQL result retrieval
 Data quality validation
 Business answer generation
+Deterministic table validation
 Critic validation
 Automatic revision
 Normalized final decision
+Basic automated testing
 ```
 
 Validated questions:
@@ -878,12 +1123,14 @@ Validated questions:
 ¿Cuáles fueron las ventas totales por mes?
 ```
 
+Current test status:
+
+```text
+19 passed
+```
+
 Current recommended next milestone:
 
 ```text
-Prepare the project for portfolio presentation:
-- Improve README
-- Add architecture diagram
-- Add demo instructions
-- Add screenshots/log examples
+Improve Semantic Context Selector robustness and add an architecture diagram for portfolio presentation.
 ```

@@ -1,6 +1,6 @@
 import json
 import re
-from src.mcp_client import list_views, get_columns
+from clients.mcp_client import list_views, get_columns
 
 
 PREFERRED_SCHEMAS = ["agg", "fact", "dim"]

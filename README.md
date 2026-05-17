@@ -12,7 +12,7 @@ The goal is to move beyond a simple SQL chatbot and build a multi-agent BI workf
 Status: Functional MVP
 ```
 
-The current version includes a working end-to-end flow:
+The current version includes a working end-to-end flow and a modular workflow structure validated with lightweight tests:
 
 ```text
 User question
@@ -81,6 +81,8 @@ The assistant can currently:
 - Review the answer with a Critic Agent.
 - Normalize the Critic decision by code.
 - Trigger one automatic revision if needed.
+- Detect result patterns in tabular outputs, such as rankings and time series.
+- Run lightweight integration tests over the workflow with mocked agents/tools.
 
 ---
 
@@ -347,6 +349,8 @@ It helps validate that key values from the SQL result are present in the Analyst
 Current capabilities:
 
 - Parses SQL results as JSON.
+- Detects result patterns such as `ranking`, `time_series`, `simple_table`, `empty` and `invalid_json`.
+- Prints the detected pattern in the validator output for better traceability.
 - Checks that key values returned by SQL are present in the Analyst response.
 - Accepts equivalent numeric formats:
   - `381585.35`
@@ -358,6 +362,7 @@ Current capabilities:
   - `March` ↔ `Marzo`
 - Re-runs after the Analyst Agent produces a revised answer.
 - Provides a deterministic signal that can override noisy Critic Agent feedback for structured table coverage.
+- Prepares the validator for future pattern-specific validation logic, such as rankings vs time series.
 
 This is an important design decision:
 
@@ -466,6 +471,8 @@ The Python agent workflow has been refactored into responsibility-based modules.
 │   ├── README.md
 │   └── agents/
 │       ├── test_critic_agent.py
+│       ├── test_main.py
+│       ├── test_bi_workflow.py
 │       ├── test_critic_parser.py
 │       ├── test_schema_selector.py
 │       ├── test_semantic_selector.py
@@ -529,9 +536,13 @@ Current coverage includes:
 - SQL parser.
 - Critic parser.
 - Table validator.
+- Table result pattern detection.
 - Schema selector scoring.
 - Semantic context selector.
 - Critic agent behavior.
+- CLI delegation to the BI workflow.
+- Lightweight BI workflow orchestration with mocks.
+- Automatic revision path in the workflow.
 ```
 
 Run tests from the repository root:
@@ -543,7 +554,7 @@ python -m pytest tests
 Current result:
 
 ```text
-19 passed
+26 passed
 ```
 
 ---
@@ -586,10 +597,10 @@ ORDER BY total_sales_perCustomer DESC;
 - `main.py` is only a CLI entrypoint.
 - The Schema Selector uses rule-based scoring.
 - Semantic context selection is implemented with simple keyword scoring, but not yet with embeddings or RAG.
-- The Semantic Context Selector can still mix Markdown sections because it currently splits by headings.
+- The Semantic Context Selector now ignores container headings, but still needs more robust semantic block extraction before moving to embeddings/RAG.
 - The Critic Agent can still be inconsistent on long tabular outputs, although the final decision is normalized by code and supported by deterministic validation.
-- Tabular validation is partially deterministic and supports numeric normalization and month name translations.
-- The current test suite covers core utilities, but end-to-end tests are not implemented yet.
+- Tabular validation is partially deterministic and supports numeric normalization, month name translations and result pattern detection.
+- Lightweight workflow integration tests are implemented with mocks, but real end-to-end CI tests against Azure SQL are not implemented yet.
 - Monthly ordering should be improved by adding `MonthNumber` to the view.
 - Microsoft Agent Framework migration is still pending.
 
@@ -601,12 +612,13 @@ ORDER BY total_sales_perCustomer DESC;
 
 - Update `docs/architecture.md` and `docs/roadmap.md` to reflect the modular structure.
 - Add a visual architecture diagram for portfolio presentation.
-- Add lightweight integration/smoke tests for the full BI workflow.
+- Improve Table Validator behavior by detected pattern, especially `ranking` vs `time_series`.
+- Add more workflow regression tests around failure paths and edge cases.
 
 ### Short term
 
 - Improve Semantic Context Selector robustness.
-- Add deterministic validation for more table patterns.
+- Use detected table patterns to drive stronger deterministic validation.
 - Add more regression tests.
 - Improve Schema Selector scoring.
 - Add demo scripts.
@@ -627,6 +639,29 @@ ORDER BY total_sales_perCustomer DESC;
 - Integrate more domains/datamarts.
 - Add stronger governance and human-in-the-loop controls.
 - Prepare a cloud-ready enterprise architecture.
+
+---
+
+## Latest Checkpoint
+
+The latest development checkpoint added stronger lightweight workflow testing and improved table validation traceability.
+
+Current additions:
+
+```text
+- CLI delegation test for main.py.
+- BI workflow happy path test with mocked agents/tools.
+- Workflow test for inconclusive Critic handling when Table Validator is OK.
+- Workflow test for automatic revision when Table Validator requires review.
+- Table Validator result pattern detection.
+- Pattern trace in Table Validator output.
+```
+
+Current test status:
+
+```text
+26 passed
+```
 
 ---
 
@@ -658,4 +693,4 @@ using real enterprise-style data and a multi-agent architecture.
 ## Current Milestone
 
 ```text
-Functional Multi-Agent BI MVP with modular Python workflow, semantic context selection, deterministic validation utilities and 19 passing tests
+Functional Multi-Agent BI MVP with modular Python workflow, semantic context selection, deterministic validation utilities and 26 passing tests

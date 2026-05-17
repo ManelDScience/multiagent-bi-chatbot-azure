@@ -10,20 +10,39 @@ def extract_sections(semantic_context: str) -> list[dict]:
     current_title = None
     current_lines = []
 
+    ignored_titles = {
+        "métricas",
+        "metricas",
+        "metrics",
+        "dimensiones",
+        "dimensions",
+        "reglas de negocio",
+        "business rules",
+    }
+
     for line in semantic_context.splitlines():
-        if line.startswith("## "):
-            if current_title and current_lines:
+        stripped_line = line.strip()
+
+        if stripped_line.startswith("#"):
+            title = stripped_line.lstrip("#").strip()
+            normalized_title = normalize_text(title).strip()
+
+            if normalized_title in ignored_titles:
+                continue
+
+            if current_title and "\n".join(current_lines).strip():
                 sections.append({
                     "title": current_title,
                     "content": "\n".join(current_lines).strip(),
                 })
 
-            current_title = line.replace("## ", "").strip()
+            current_title = title
             current_lines = []
         else:
-            current_lines.append(line)
+            if current_title:
+                current_lines.append(line)
 
-    if current_title and current_lines:
+    if current_title and "\n".join(current_lines).strip():
         sections.append({
             "title": current_title,
             "content": "\n".join(current_lines).strip(),

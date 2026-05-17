@@ -63,6 +63,20 @@ def detect_result_pattern(query_result: str) -> str:
     return "simple_table"
 
 
+def get_rows_to_check_by_pattern(
+    rows: list[dict],
+    pattern: str,
+    max_rows_to_check: int,
+) -> list[dict]:
+    if pattern == "time_series":
+        return rows[:max(max_rows_to_check, 100)]
+
+    if pattern == "ranking":
+        return rows[:max_rows_to_check]
+
+    return rows[:max_rows_to_check]
+
+
 def parse_query_result(query_result: str) -> list[dict[str, Any]]:
     try:
         data = json.loads(query_result)
@@ -122,17 +136,21 @@ def validate_table_coverage(
         max_rows_to_check = max(max_rows_to_check, 100)
 
     if not rows:
-        return """
-## Table Validator
+        return f"""
+    ## Table Validator
 
-Pattern detected: {pattern}
+    Pattern detected: {pattern}
 
-REVISAR
+    REVISAR
 
-- El resultado SQL está vacío o no se pudo interpretar como JSON.
-"""
+    - El resultado SQL está vacío o no se pudo interpretar como JSON.
+    """
 
-    rows_to_check = rows[:max_rows_to_check]
+    rows_to_check = get_rows_to_check_by_pattern(
+        rows=rows,
+        pattern=pattern,
+        max_rows_to_check=max_rows_to_check,
+    )
 
     missing_values = []
 

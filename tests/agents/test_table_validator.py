@@ -1,6 +1,8 @@
 from agents.validators.table_validator import (
     validate_table_coverage
-    , detect_result_pattern,
+    , detect_result_pattern
+    , get_rows_to_check_by_pattern
+    ,
     )
 
 
@@ -62,6 +64,7 @@ def test_table_validator_handles_empty_result():
       result = validate_table_coverage(query_result, analyst_output)
 
       assert "OK" in result
+
 
 def test_detect_result_pattern_time_series():
     query_result = """
@@ -181,3 +184,34 @@ Octubre 2013: 1000
     assert "REVISAR" in result
     assert "1100" in result
   
+
+def test_get_rows_to_check_keeps_top_n_for_ranking():
+    rows = [
+        {"CustomerName": "A", "TotalSales": 100},
+        {"CustomerName": "B", "TotalSales": 90},
+        {"CustomerName": "C", "TotalSales": 80},
+    ]
+
+    result = get_rows_to_check_by_pattern(
+        rows=rows,
+        pattern="ranking",
+        max_rows_to_check=2,
+    )
+
+    assert result == rows[:2]
+
+
+def test_get_rows_to_check_expands_time_series_to_100():
+    rows = [
+        {"Year": 2013, "MonthName": "January", "TotalSales": 100},
+        {"Year": 2013, "MonthName": "February", "TotalSales": 200},
+        {"Year": 2013, "MonthName": "March", "TotalSales": 300},
+    ]
+
+    result = get_rows_to_check_by_pattern(
+        rows=rows,
+        pattern="time_series",
+        max_rows_to_check=1,
+    )
+
+    assert result == rows

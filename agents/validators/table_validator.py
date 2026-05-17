@@ -108,3 +108,47 @@ OK
 - La respuesta cubre los primeros {len(rows_to_check)} registros del resultado SQL.
 - No se detectan omisiones evidentes en los valores principales.
 """
+
+def detect_result_pattern(query_result: str) -> str:
+    try:
+        data = json.loads(query_result)
+    except Exception:
+        return "invalid_json"
+    
+    if not data:
+        return "empty"
+    
+    if not isinstance(data, list):
+        return "invalid_json"
+    
+    if not all(isinstance(row, dict) for row in data):
+        return "invalid_json"
+    
+    columns = set()
+    for row in data:
+        columns.update(row.keys())
+
+    normalized_columns = {column.lower() for column in columns}
+
+    has_time = any(
+        column in normalized_columns
+        for column in ["year", "month", "monthname", "monthnumer", "yearmonth", "date"]
+    )
+
+    has_customer_or_name = any(
+        column in normalized_columns
+        for column in ["customername", "customer", "name"]
+    )
+
+    has_metric = any(
+        any(keyword in column for keyword in ["sales", "ventas", "total", "amount", "revenue"])
+        for column in normalized_columns
+    )
+
+    if has_time and has_metric:
+        return "time_series"
+    
+    if has_customer_or_name and has_metric:
+        return "ranking"
+    
+    return "simple_table"

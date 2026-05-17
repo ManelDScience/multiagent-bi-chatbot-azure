@@ -190,6 +190,7 @@ Benefits:
 Current limitation:
 
 - It uses simple keyword scoring.
+- It now ignores high-level container headings, but still needs stronger semantic block extraction.
 - It does not use embeddings, vector search or RAG yet.
 
 ---
@@ -360,6 +361,8 @@ Performs deterministic validation over structured SQL results.
 Responsibilities:
 
 - Parse SQL results as JSON.
+- Detect result patterns such as `ranking`, `time_series`, `simple_table`, `empty` and `invalid_json`.
+- Print the detected pattern in the validator output.
 - Compare query result values with the Analyst Agent response.
 - Normalize numeric formats.
 - Accept equivalent numeric formats such as:
@@ -381,6 +384,8 @@ Analyst response: Enero
 This is accepted as equivalent.
 
 This reduces the risk of the Critic Agent incorrectly flagging valid answers due to formatting differences, translated month names or long lists.
+
+The pattern trace prepares the validator for stronger future behavior, for example validating rankings and time series with different rules.
 
 ---
 
@@ -744,12 +749,14 @@ tests/agents/test_table_validator.py
 tests/agents/test_schema_selector.py
 tests/agents/test_semantic_selector.py
 tests/agents/test_critic_agent.py
+tests/agents/test_main.py
+tests/agents/test_bi_workflow.py
 ```
 
 Current result:
 
 ```text
-19 passed
+26 passed
 ```
 
 The tests cover:
@@ -763,6 +770,38 @@ The tests cover:
 - Schema selector scoring.
 - Semantic context selection.
 - Basic Critic Agent behavior.
+- CLI delegation to `run_bi_workflow()`.
+- BI workflow happy path with mocks.
+- Inconclusive Critic handling when Table Validator is OK.
+- Automatic revision path when Table Validator requires review.
+- Result pattern detection in Table Validator.
+
+---
+
+## 5.1 Latest Checkpoint — Workflow Tests and Table Pattern Detection
+
+The latest checkpoint added lightweight integration tests for the workflow and improved Table Validator traceability.
+
+New workflow tests validate:
+
+```text
+- main.py delegates to run_bi_workflow().
+- bi_workflow happy path runs with mocks.
+- Table Validator OK + inconclusive Critic does not trigger unnecessary revision.
+- Table Validator REVISAR + Critic REQUIERE REVISIÓN triggers automatic revision.
+```
+
+New Table Validator behavior:
+
+```text
+Pattern detected: ranking
+Pattern detected: time_series
+Pattern detected: simple_table
+Pattern detected: empty
+Pattern detected: invalid_json
+```
+
+This is the first step toward pattern-specific deterministic validation.
 
 ---
 
@@ -1018,7 +1057,7 @@ Domain routing
 
 ### Semantic Context Selector is basic
 
-The semantic layer is now filtered by a basic Semantic Context Selector, but the selection still uses simple keyword scoring instead of embeddings or RAG.
+The semantic layer is now filtered by a basic Semantic Context Selector. It ignores high-level container headings and returns cleaner semantic sections, but the selection still uses simple keyword scoring instead of embeddings or RAG.
 
 Future improvement:
 
@@ -1099,12 +1138,12 @@ Document MonthName language in the semantic layer.
 
 ### Test suite is still small
 
-The project now includes basic tests, but coverage is still limited.
+The project now includes unit tests and lightweight workflow integration tests with mocks. Coverage is still limited, but the critical orchestration paths are now better protected.
 
 Current result:
 
 ```text
-19 passed
+26 passed
 ```
 
 Future improvement:
@@ -1115,7 +1154,7 @@ Add tests for:
 - SQL Agent prompt regression cases
 - Data Quality Agent outputs
 - Semantic selector edge cases
-- End-to-end smoke tests
+- Real end-to-end smoke tests against Azure SQL
 ```
 
 ---
@@ -1125,12 +1164,12 @@ Add tests for:
 ### Immediate next steps
 
 ```text
-1. Update README.md with the latest modular architecture.
+1. Update docs/architecture.md and docs/roadmap.md.
 2. Add architecture diagram.
-3. Improve Semantic Context Selector robustness.
-4. Add lightweight integration tests for the full BI workflow.
-5. Add more deterministic validators for tabular outputs.
-6. Improve schema selector scoring.
+3. Improve Table Validator behavior by detected pattern.
+4. Add more deterministic validators for tabular outputs.
+5. Improve schema selector scoring.
+6. Add real smoke tests or scripted demo runs.
 ```
 
 ### Short term
@@ -1268,11 +1307,11 @@ Validated questions:
 Current test status:
 
 ```text
-19 passed
+26 passed
 ```
 
 Current recommended next milestone:
 
 ```text
-Update README.md with the latest modular architecture, then improve Semantic Context Selector robustness and add an architecture diagram for portfolio presentation.
+Improve Table Validator behavior by detected pattern, then update architecture.md and roadmap.md with the modular workflow and testing status.
 ```

@@ -100,4 +100,84 @@ def test_detect_result_pattern_invalid_json():
     query_result = "not json"
 
     assert detect_result_pattern(query_result) == "invalid_json"
+
+
+def test_table_validator_checks_all_time_series_rows_by_default():
+    query_result = """
+[
+  {
+    "Year": 2013,
+    "MonthName": "January",
+    "TotalSales": 100
+  },
+  {
+    "Year": 2013,
+    "MonthName": "February",
+    "TotalSales": 200
+  },
+  {
+    "Year": 2013,
+    "MonthName": "March",
+    "TotalSales": 300
+  },
+  {
+    "Year": 2013,
+    "MonthName": "April",
+    "TotalSales": 400
+  },
+  {
+    "Year": 2013,
+    "MonthName": "May",
+    "TotalSales": 500
+  },
+  {
+    "Year": 2013,
+    "MonthName": "June",
+    "TotalSales": 600
+  },
+  {
+    "Year": 2013,
+    "MonthName": "July",
+    "TotalSales": 700
+  },
+  {
+    "Year": 2013,
+    "MonthName": "August",
+    "TotalSales": 800
+  },
+  {
+    "Year": 2013,
+    "MonthName": "September",
+    "TotalSales": 900
+  },
+  {
+    "Year": 2013,
+    "MonthName": "October",
+    "TotalSales": 1000
+  },
+  {
+    "Year": 2013,
+    "MonthName": "November",
+    "TotalSales": 1100
+  }
+]
+"""
+
+    analyst_output = """
+Enero 2013: 100
+Febrero 2013: 200
+Marzo 2013: 300
+Abril 2013: 400
+Mayo 2013: 500
+Junio 2013: 600
+Julio 2013: 700
+Agosto 2013: 800
+Septiembre 2013: 900
+Octubre 2013: 1000
+"""
+
+    result = validate_table_coverage(query_result, analyst_output)
+
+    assert "REVISAR" in result
+    assert "1100" in result
   

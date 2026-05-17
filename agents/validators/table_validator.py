@@ -118,6 +118,8 @@ def validate_table_coverage(
 ) -> str:
     rows = parse_query_result(query_result)
     pattern = detect_result_pattern(query_result)
+    if pattern == "time_series":
+        max_rows_to_check = max(max_rows_to_check, 100)
 
     if not rows:
         return """
